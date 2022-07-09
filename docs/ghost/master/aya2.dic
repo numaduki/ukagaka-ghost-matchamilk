@@ -1,0 +1,666 @@
+// ########################################
+// ########################################
+
+// 結奈SEから
+// 第一引数として『関数名』、
+// 第二引数として『その関数に渡す引数』を渡す
+// 複数の引数を渡したい時はそれらをコンマではなく
+// アスタリスクで区切ってひとつの引数として渡す
+// そのため渡す引数には*を含むことはできない
+
+// 引数を利用する関数には、
+// その引数を利用するより前に
+// GetArg(_argv[0])を実行する必要あり
+// （引数要らない場合、1つだけの場合は必要なし）
+// そのあと引数をstr[n]で利用
+
+// 例示：
+// 結奈側で
+// $saori[Aya,OnHogeHoge,伺か*C.R.O.W.*392]
+// と記述すると
+// 文側で
+// 関数OnHogeHogeの引数として
+// str[0]の"伺か"
+// str[1]の"C.R.O.W."
+// str[2]の"392"
+// が利用できる
+// str[2]の392は文字列なので注意
+// _i = TONUMBER2(str[2]) で数値化して_iに代入可能
+
+// このやりかたはあんまり美しくない気もするけども
+// 打開策が浮かばないので妥協
+
+// ########################################
+// ########################################
+
+#define	←┘		%ASC(13)%ASC(10)
+
+OnLoad
+{
+	_i = LOADLIB("bln.dll")
+}
+
+OnRequest
+{
+	_func = REQ.VALUE("Argument0")
+	_arg = REQ.VALUE("Argument1")
+	_answer = CALLBYNAME("%_func(_arg)")
+	if _answer == ""
+	{
+		"SAORI/1.0 204 No Content←┘←┘"
+	}
+	else
+	{
+		"SAORI/1.0 200 OK←┘/
+		Charset: Shift_JIS←┘/
+		Result: %_answer←┘←┘"
+	}
+}
+
+// ########################################
+// ########################################
+
+// この関数で引数の内容を解析
+
+GetArg
+{
+	str = _argv[0]
+	SETSEPARATOR(str,"*")
+}
+
+// ########################################
+// ########################################
+
+
+
+// ポイント初期化
+// 引数なし
+PointInitialize
+{
+	Point_K = 10
+	Point_U = 10
+	Point_Q = 10
+	Point_P = 10
+	Times_Onair = 0
+	Times_Try = 0
+}
+
+
+
+// 各ポイントの上限・下限を設定
+// 上限100・下限10
+// ポイントを増減した後にこれを呼んでリミット
+
+PointLimitter
+{
+	if Point_K > 100
+	{
+		Point_K = 100
+	}
+	if Point_U > 100
+	{
+		Point_U = 100
+	}
+	if Point_Q > 100
+	{
+		Point_Q = 100
+	}
+	if Point_P > 100
+	{
+		Point_P = 100
+	}
+	if Point_K < 10
+	{
+		Point_K = 10
+	}
+	if Point_U < 10
+	{
+		Point_U = 10
+	}
+	if Point_Q < 10
+	{
+		Point_Q = 10
+	}
+	if Point_P < 10
+	{
+		Point_P = 10
+	}
+
+}
+
+
+// 指定した確率でポイント上げ下げ
+// arg0:(K/U/P/Q)
+// arg1:増加か減少か(+か-)
+// arg2:増加ポイント、正の整数
+// arg3:増加する確率・パーセンテージで数字のみ、整数
+
+PointChange
+{
+	GetArg(_argv[0])
+	_p = TONUMBER2(str[2])
+	_q = TONUMBER2(str[3])
+	if RAND(100) < _q && str[1] == "+"
+	{
+		if str[0] == "K"
+		{
+			Point_K = Point_K + _p
+		}
+		elseif str[0] == "U"
+		{
+			Point_U = Point_U + _p
+		}
+		elseif str[0] == "Q"
+		{
+			Point_Q = Point_Q + _p
+		}
+		elseif str[0] == "P"
+		{
+			Point_P = Point_P + _p
+		}
+		PointLimitter
+	}
+	elseif RAND(100) <= _q && str[1] == "-"
+	{
+		if str[0] == "K"
+		{
+			Point_K = Point_K - _p
+		}
+		elseif str[0] == "U"
+		{
+			Point_U = Point_U - _p
+		}
+		elseif str[0] == "Q"
+		{
+			Point_Q = Point_Q - _p
+		}
+		elseif str[0] == "P"
+		{
+			Point_P = Point_P - _p
+		}
+		PointLimitter
+	}
+}
+
+
+
+// 分が変わるごとに一定の確率で実行
+// elseifではないのでどっちも上がることあり
+// arg0:最小化フラッグ(1=最小化中/0=非最小化中)
+
+MinuteChangeBonus
+{
+	if _argv[0] == "1"
+	{
+		if RAND(200) < 1
+		{
+			Point_Q += 1
+		}
+		if RAND(200) >= 199
+		{
+			Point_P += 1
+		}
+	}
+	else
+	{
+		if RAND(200) < 6
+		{
+			Point_Q += 1
+		}
+		if RAND(200) >= 195
+		{
+			Point_P += 1
+		}
+	}
+}
+
+
+
+
+
+
+
+// 全ポイント一括して上げ下げ
+// arg1:増加・減少量
+
+PointAllChange
+{
+	_p = TONUMBER2(_argv[0])
+	Point_K += _p
+	Point_U += _p
+	Point_Q += _p
+	Point_P += _p
+	PointLimitter
+}
+
+
+
+
+// 能力値グラフ表示
+// 引数なし
+
+ShowCapaGraph
+{
+	PointLimitter
+	FUNCTIONEX("saori\hanayu.dll","show","capa","","%Point_P","","%Point_K","","%Point_Q","","%Point_U")
+}
+
+
+
+
+EraseAllEB
+{
+	FUNCTIONEX("saori\bln.dll","clean")
+}
+
+
+
+
+// 計量
+// 引数なし
+
+PlayOnAirBattle
+{
+	if Times_Try == ""
+	{
+		Times_Try = 0
+		Times_Onair = 0
+	}
+	Times_Try++
+	// 挑戦回数にプラス1（なければ変数を生成）
+
+	_m = Point_K + Point_U + Point_Q + Point_P
+	_m = _m / 4
+	// まっちゃみるく。の獲得ボール数を決定
+
+	_a = RAND(101) * 4
+	_b = RAND(101) * 4
+	_c = RAND(101) * 4
+	_d = RAND(101) * 4
+	_e = RAND(101) * 4
+	_f = RAND(101) * 4
+	_g = RAND(101) * 4
+	_h = RAND(101) * 4
+	_i = RAND(101) * 4
+	_m = _m * 4
+	// 各出場者の獲得ボール数を決定
+
+	// このままでは毎回のようにオーバー500が出るので
+	// 適当な範囲でボール数を増減
+	if _a <= 152 && RAND(100) < 50
+	{
+		_a = _a + 52
+	}
+	if _b <= 152 && RAND(100) < 50
+	{
+		_b = _b + 52
+	}
+	if _c <= 152 && RAND(100) < 50
+	{
+		_c = _c + 52
+	}
+	if _d <= 152 && RAND(100) < 50
+	{
+		_d = _d + 52
+	}
+	if _e <= 152 && RAND(100) < 50
+	{
+		_e = _e + 52
+	}
+	if _f <= 152 && RAND(100) < 50
+	{
+		_f = _f + 52
+	}
+	if _g <= 152 && RAND(100) < 50
+	{
+		_g = _g + 52
+	}
+	if _h <= 152 && RAND(100) < 50
+	{
+		_h = _h + 52
+	}
+	if _i <= 152 && RAND(100) < 50
+	{
+		_i = _i + 52
+	}
+	if _m <= 152 && RAND(100) < 50
+	{
+		_m = _m + 52
+	}
+
+	if _a >= 356 && RAND(100) > 20
+	{
+		_a = _a - 52
+	}
+	if _b >= 356 && RAND(100) > 20
+	{
+		_b = _b - 52
+	}
+	if _c >= 356 && RAND(100) > 20
+	{
+		_c = _c - 52
+	}
+	if _d >= 356 && RAND(100) > 20
+	{
+		_d = _d - 52
+	}
+	if _e >= 356 && RAND(100) > 20
+	{
+		_e = _e - 52
+	}
+	if _f >= 356 && RAND(100) > 20
+	{
+		_f = _f - 52
+	}
+	if _g >= 356 && RAND(100) > 20
+	{
+		_g = _g - 52
+	}
+	if _h >= 356 && RAND(100) > 20
+	{
+		_h = _h - 52
+	}
+	if _i >= 356 && RAND(100) > 20
+	{
+		_i = _i - 52
+	}
+	if _m >= 356 && RAND(100) > 20
+	{
+		_m = _m - 52
+	}
+	_a += 145
+	_b += 145
+	_c += 145
+	_d += 145
+	_e += 145
+	_f += 145
+	_g += 145
+	_h += 145
+	_i += 145
+	_m += 145
+	// ここまでで各出場者のキロバトル決定。_mはまっちゃみるく。のキロバトル
+
+	// _strにそれぞれのキロバトルを列挙・表示はしない
+	_str = "%_a,%_b,%_c,%_d,%_e,%_f,%_g,%_h,%_i,%_m"
+	_str2 = "%_a\n%_b\n%_c\n%_d\n%_e\n%_f\n%_g\n%_h\n%_i\n%_m"
+	// _strには後で代入したりするので、
+	// 表に表示する場合はここで避難させる
+	// 今回は表示しないのでコメントアウト
+	// _str6 = _str
+
+	// キロバトルをキロバトル数の高い順から並べた_str0、
+	// 出場番号をキロバトル数の高い順から並べた_num0を生成
+	_loop1 = 0
+	_str0 = ""
+	_num0 = ""
+	while _loop1 < 10
+	{
+	// _resultに最大の数、_numにその簡易配列の番号
+	_result = _str[0]
+	_num = 0
+	_j = 1
+	while _j < 10
+	{
+	_value = _str[_j]
+	if _result < _value
+	{
+	_num = _j
+	_result = _value
+	}
+	_j++
+	}
+	// 最大が出た、その結果と何番目かを記録
+	_str0 = _str0 + _result
+	_num0 = _num0 + _num
+	// そしてその最高記録の場所に0代入、これで次のループの時に最高値になることはない
+	_str[_num] = 0
+	_loop1++
+	// 一番最後のループ以外のときコンマつける
+	if _loop1 < 10
+	{
+		_str0 = _str0 + ","
+		_num0 = _num0 + ","
+	}
+}
+
+	// 画面左上に表示するパネルの準備
+
+	// まず画面上のeasuballoonをクリア
+	FUNCTIONEX("saori\bln.dll","clear")
+	// 表示
+	FUNCTIONEX("saori\bln.dll","b1","%_a",0,5,"b1",1)
+	FUNCTIONEX("saori\bln.dll","b2","%_b",0,35,"b2",1)
+	FUNCTIONEX("saori\bln.dll","b3","%_c",0,65,"b3",1)
+	FUNCTIONEX("saori\bln.dll","b4","%_d",0,95,"b4",1)
+	FUNCTIONEX("saori\bln.dll","b5","%_e",0,125,"b5",1)
+	FUNCTIONEX("saori\bln.dll","b6","%_f",0,155,"b6",1)
+	FUNCTIONEX("saori\bln.dll","b7","%_g",0,185,"b7,1)
+	FUNCTIONEX("saori\bln.dll","b8","%_h",0,215,"b8",1)
+	FUNCTIONEX("saori\bln.dll","b9","%_i",0,245,"b9",1)
+	FUNCTIONEX("saori\bln.dll","b10","%_m",0,275,"b10",1)
+
+	onairstatus = ""
+	rank = ""
+	// ONAIR・OFFAIRパネル表示と順位取得
+	if "9"_in_ "%_num0[0]"
+	{
+	onairstatus = "onair"
+	rank = 1
+	}
+	if "9"_in_ "%_num0[1]"
+	{
+	onairstatus = "onair"
+	rank = 2
+	}
+	if "9"_in_ "%_num0[2]"
+	{
+	onairstatus = "onair"
+	rank = 3
+	}
+	if "9"_in_ "%_num0[3]"
+	{
+	onairstatus = "onair"
+	rank = 4
+	}
+	if "9"_in_ "%_num0[4]"
+	{
+	onairstatus = "onair"
+	rank = 5
+	}
+
+	if "9"_in_ "%_num0[5]"
+	{
+		if _str0[5] == _str0[4]
+		{
+			onairstatus = "onair"
+			rank = 6
+		}
+		else
+		{
+			onairstatus = "offair"
+			rank = 6
+		}
+	}
+	elseif "9"_in_ "%_num0[6]"
+	{
+		if _str0[5] == _str0[4] && _str0[6] == _str0[5]
+		{
+			onairstatus = "onair"
+			rank = 7
+		}
+		else
+		{
+			onairstatus = "offair"
+			rank = 7
+		}
+	}
+	elseif "9"_in_ "%_num0[7]"
+	{
+		if _str0[5] == _str0[4] && _str0[6] == _str0[5] && _str0[7] == _str0[6]
+		{
+			onairstatus = "onair"
+			rank = 8
+		}
+		else
+		{
+			onairstatus = "offair"
+			rank = 8
+		}
+	}
+	elseif "9"_in_ "%_num0[8]"
+	{
+		if _str0[5] == _str0[4] && _str0[6] == _str0[5] && _str0[7] == _str0[6] && _str0[8] == _str0[7]
+		{
+			onairstatus = "onair"
+			rank = 9
+		}
+		else
+		{
+			onairstatus = "offair"
+			rank = 9
+		}
+	}
+	elseif "9"_in_ "%_num0[9]"
+	{
+		if _str0[5] == _str0[4] && _str0[6] == _str0[5] && _str0[7] == _str0[6] && _str0[8] == _str0[7] && _str0[9] == _str0[8]
+		{
+			onairstatus = "onair"
+			rank = 10
+		}
+		else
+		{
+			onairstatus = "offair"
+			rank = 10
+		}
+	}
+
+	// 表示用文字列、_str2を作る
+	// ただ列挙しただけの文字列は_str6で利用、前のコメントアウト外してから
+	// 登場順を順位で並べたものは_num0
+
+	_str2 = "\0\s[6]\b[2]\_q獲得キロバトル：%_mKB\_q\n\n[half]ランキング：\n\w6/
+	\_q01.%_str0[0]\_q\w6\n/
+	\_q02.%_str0[1]\_q\w6\n/
+	\_q03.%_str0[2]\_q\w6\n/
+	\_q04.%_str0[3]\_q\w6\n/
+	\_q05.%_str0[4]\_q\w6\n/
+	\_q06.%_str0[5]\_q\w6\n/
+	\_q07.%_str0[6]\_q\w6\n/
+	\_q08.%_str0[7]\_q\w6\n/
+	\_q09.%_str0[8]\_q\w6\n/
+	\_q10.%_str0[9]\_q\w6\n/
+	\n[half]"
+
+	if onairstatus == "onair"
+	{
+	// オンエアされたのでオンエア回数をプラス1
+	Times_Onair++
+	FUNCTIONEX("saori\bln.dll","onair","ランク:%rank位\nOA率：\n%Times_Onair/%Times_Try",0,285,"onair",1)
+
+		if rank == 1
+		{
+			_substr = Reaction("on1")
+			_str2 = _str2 + _substr
+		}
+		elseif rank == 2
+		{
+			_substr = Reaction("on2")
+			_str2 = _str2 + _substr
+		}
+		elseif rank == 3
+		{
+			_substr = Reaction("on3")
+			_str2 = _str2 + _substr
+		}
+		elseif rank == 4
+		{
+			_substr = Reaction("on4")
+			_str2 = _str2 + _substr
+		}
+		elseif rank == 5
+		{
+			_substr = Reaction("on5")
+			_str2 = _str2 + _substr
+		}
+		elseif rank == 6
+		{
+			_substr = Reaction("on6")
+			_str2 = _str2 + _substr
+		}
+		else
+		{
+			_substr = Reaction("onelse")
+			_str2 = _str2 + _substr
+		}
+	}
+	else
+	{
+	FUNCTIONEX("saori\bln.dll","offair","ランク:%rank位\nOA率：\n%Times_Onair/%Times_Try",0,285,"offair",1)
+		if rank == 6
+		{
+			_substr = Reaction("off6")
+			_str2 = _str2 + _substr
+		}
+		else
+		{
+			_substr = Reaction("offelse")
+			_str2 = _str2 + _substr
+		}
+	}
+
+
+
+	_str2
+
+}
+
+
+
+Reaction
+{
+	if _argv[0] == "on1"
+	{
+	"\w6……\w6\s[5]やった、\w61位や！\w6\1\s[15]やったね～。\w6\0\s[5]\n\nし、\w6師匠、\w61位ですよ！\w6\n1位になりましたー！\w6\1\s[15]\n\n……。\e"
+	"\w6\s[2]え、\w61位？！\w6\1\s[15]すごいね～。\w6\0\s[5]\n\nやった！\w6\n頑張った甲斐があったねんでー。\e"
+	"\w6\s[2]い、\w61位！\w6\s[5]\n1位やん！\w6\1\s[16]1位って……\w6\s[15]滅多に取れないよね～。\w6\0\s[5]\n\n嬉しいなあー。\e"
+	}
+	elseif _argv[0] == "on2"
+	{
+	"\w6……\w6\s[5]2位や！\w6\1\s[15]オンエア～。\w6\0\s[5]\n\nよかったー、\w6一生懸命練習したもんなあー……。\e"
+	"\w6……\w6\s[5]2位オンエア！\w6\1\s[15]よかったね～。\e"
+	}
+	elseif _argv[0] == "on3"
+	{
+	"\w6……\w6\s[5]3位。\w6\nオンエアされたでー。\w6\1\s[15]次もオンエアされるといいね～。\e"
+	}
+	elseif _argv[0] == "on4"
+	{
+	"\w6……\w6\s[9]4位。\w6\s[5]\nオンエアや。\w6\1\s[16]……\w6でも。\w9\s[18]\nもうちょっと上でオンエアされたかったかもね～。\w6\0\s[2]\n\nえ、えらい前衛的なこと言うんやね。\e"
+	}
+	elseif _argv[0] == "on5"
+	{
+	"\w6\s[6]……\w65位。\w9\s[2]\nあ、\w6危なかったー。\w6\1\s[15]……\w6でもオンエアだよ～。\e"
+	}
+	elseif _argv[0] == "on6"
+	{
+	"\w6\s[4]……\w6ろ、6位。\w6残念。\w9\1\s[10]……\w9\s[18]あれ。\w9\s[15]\nオンエアみたいだよ～。\w9\0\s[0]\n\n……\w9あ、\w66位タイや。\w6\s[5]\nラッキー！\e"
+	}
+	elseif _argv[0] == "onelse"
+	{
+	"\w6\s[2]……\w6も、\w6もしかしてタイでオンエア？\w6\1\s[12]珍しいね～。\w6\0\s[5]\n\nもうけやんかー！\e"
+	}
+	elseif _argv[0] == "off6"
+	{
+	"\w6\s[6]……\w66位。\w6\s[4]ざ、\w6残念。\w6\1\s[18]次また頑張れば、\w6きっと5位以上になれるよ～。\w6\0\s[3]\n\n……\w6むぅ。\e"
+	}
+	elseif _argv[0] == "offelse"
+	{
+	"\w6\s[3]……\w6む、\w6\s[4]%rank位。\w6\n厳しいなぁ……。\w6\1\s[14]う～ん。\e"
+	"\w6\s[4]%rank位、やて。\w6\1\s[14]頑張ったのに……。\w6\0\s[7]\n\n……\w6次や、\w6うーちゃん。\w6次がんばろ。\e"
+	"\w6\1\s[14]%rank位……。\w6\0\s[4]むう。\w9\s[7]\nよーし、\w6こうなったらオンエアされるまで何度でも出たるでー。\w6\1\s[18]\n\n……。\e"
+	}
+	else
+	{
+	"\e"
+	}
+}
