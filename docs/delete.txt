@@ -1,2 +1,0 @@
-ghost\master\aya.dll
-ghost\master\aya.txt

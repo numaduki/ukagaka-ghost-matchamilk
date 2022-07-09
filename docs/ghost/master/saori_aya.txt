@@ -1,3 +1,0 @@
-dic, aya1.dic
-dic, aya2.dic
-// log, aya.log
