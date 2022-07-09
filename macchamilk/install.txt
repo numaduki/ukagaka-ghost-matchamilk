@@ -1,5 +1,0 @@
-charset, Shift_JIS
-type,ghost
-name,‚¯‚ë‚È
-directory,macchamilk
-balloon.directory,545kb
