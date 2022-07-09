@@ -1,7 +1,7 @@
 charset,Shift_JIS
 type,shell
 name,’è”Ôˆß‘•
-craftman,amana
+craftman,Amana
 craftmanw,‚ ‚Ü‚È
 id,ordinary
 craftmanurl,http://www5a.biglobe.ne.jp/~dash_r/ax/
