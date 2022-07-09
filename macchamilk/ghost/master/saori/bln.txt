@@ -1,0 +1,275 @@
+[onair]
+position,lefttop
+skin,onair.png
+offset.x, 60
+offset.y, 0
+disparea.top, 10
+disparea.bottom, 48
+disparea.left, 12
+disparea.right, 73
+font.color, 775555
+font.size, 10
+font.face, TBPºÞ¼¯¸B
+font.bold, off
+clickerase, on
+dragmove.horizontal,off
+dragmove.vertical,off
+startdelay, 0
+life,12000
+nooverlap, off
+slide.vx,0
+slide.vy,0
+slide.autostop,0
+
+[offair]
+position,lefttop
+skin,offair.png
+offset.x, 60
+offset.y, 0
+disparea.top, 10
+disparea.bottom, 48
+disparea.left, 12
+disparea.right, 73
+font.color, 555577
+font.size, 10
+font.face, TBPºÞ¼¯¸B
+font.bold, off
+clickerase, on
+dragmove.horizontal,off
+dragmove.vertical,off
+startdelay, 0
+life,12000
+nooverlap, off
+slide.vx,0
+slide.vy,0
+slide.autostop,0
+
+[b1]
+position,lefttop
+skin,1.png
+offset.x, -76
+offset.y, 0
+disparea.top, 4
+disparea.bottom, 20
+disparea.left, 25
+disparea.right, 75
+font.color, 555555
+font.size, 16
+font.face, Arial
+font.bold, off
+clickerase, on
+dragmove.horizontal,off
+dragmove.vertical,off
+startdelay, 0
+life,12000
+nooverlap, off
+slide.vx,15
+slide.vy,0
+slide.autostop,250
+
+[b2]
+position,lefttop
+skin,2.png
+offset.x, -76
+offset.y, 0
+disparea.top, 4
+disparea.bottom, 20
+disparea.left, 25
+disparea.right, 75
+font.color, 555555
+font.size, 16
+font.face, Arial
+font.bold, off
+clickerase, on
+dragmove.horizontal,off
+dragmove.vertical,off
+startdelay, 0
+life,12000
+nooverlap, off
+slide.vx,15
+slide.vy,0
+slide.autostop,250
+
+[b3]
+position,lefttop
+skin,3.png
+offset.x, -76
+offset.y, 0
+disparea.top, 4
+disparea.bottom, 20
+disparea.left, 25
+disparea.right, 75
+font.color, 555555
+font.size, 16
+font.face, Arial
+font.bold, off
+clickerase, on
+dragmove.horizontal,off
+dragmove.vertical,off
+startdelay, 0
+life,12000
+nooverlap, off
+slide.vx,15
+slide.vy,0
+slide.autostop,250
+
+[b4]
+position,lefttop
+skin,4.png
+offset.x, -76
+offset.y, 0
+disparea.top, 4
+disparea.bottom, 20
+disparea.left, 25
+disparea.right, 75
+font.color, 555555
+font.size, 16
+font.face, Arial
+font.bold, off
+clickerase, on
+dragmove.horizontal,off
+dragmove.vertical,off
+startdelay, 0
+life,12000
+nooverlap, off
+slide.vx,15
+slide.vy,0
+slide.autostop,250
+
+[b5]
+position,lefttop
+skin,5.png
+offset.x, -76
+offset.y, 0
+disparea.top, 4
+disparea.bottom, 20
+disparea.left, 25
+disparea.right, 75
+font.color, 555555
+font.size, 16
+font.face, Arial
+font.bold, off
+clickerase, on
+dragmove.horizontal,off
+dragmove.vertical,off
+startdelay, 0
+life,12000
+nooverlap, off
+slide.vx,15
+slide.vy,0
+slide.autostop,250
+
+[b6]
+position,lefttop
+skin,6.png
+offset.x, -76
+offset.y, 0
+disparea.top, 4
+disparea.bottom, 20
+disparea.left, 25
+disparea.right, 75
+font.color, 555555
+font.size, 16
+font.face, Arial
+font.bold, off
+clickerase, on
+dragmove.horizontal,off
+dragmove.vertical,off
+startdelay, 0
+life,12000
+nooverlap, off
+slide.vx,15
+slide.vy,0
+slide.autostop,250
+
+[b7]
+position,lefttop
+skin,7.png
+offset.x, -76
+offset.y, 0
+disparea.top, 4
+disparea.bottom, 20
+disparea.left, 25
+disparea.right, 75
+font.color, 555555
+font.size, 16
+font.face, Arial
+font.bold, off
+clickerase, on
+dragmove.horizontal,off
+dragmove.vertical,off
+startdelay, 0
+life,12000
+nooverlap, off
+slide.vx,15
+slide.vy,0
+slide.autostop,250
+
+[b8]
+position,lefttop
+skin,8.png
+offset.x, -76
+offset.y, 0
+disparea.top, 4
+disparea.bottom, 20
+disparea.left, 25
+disparea.right, 75
+font.color, 555555
+font.size, 16
+font.face, Arial
+font.bold, off
+clickerase, on
+dragmove.horizontal,off
+dragmove.vertical,off
+startdelay, 0
+life,12000
+nooverlap, off
+slide.vx,15
+slide.vy,0
+slide.autostop,250
+
+[b9]
+position,lefttop
+skin,9.png
+offset.x, -76
+offset.y, 0
+disparea.top, 4
+disparea.bottom, 20
+disparea.left, 25
+disparea.right, 75
+font.color, 555555
+font.size, 16
+font.face, Arial
+font.bold, off
+clickerase, on
+dragmove.horizontal,off
+dragmove.vertical,off
+startdelay, 0
+life,12000
+nooverlap, off
+slide.vx,15
+slide.vy,0
+slide.autostop,250
+
+[b10]
+position,lefttop
+skin,10.png
+offset.x, -76
+offset.y, 0
+disparea.top, 4
+disparea.bottom, 20
+disparea.left, 25
+disparea.right, 75
+font.color, 555555
+font.size, 16
+font.face, Arial
+font.bold, off
+clickerase, on
+dragmove.horizontal,off
+dragmove.vertical,off
+startdelay, 0
+life,12000
+nooverlap, off
+slide.vx,15
+slide.vy,0
+slide.autostop,250

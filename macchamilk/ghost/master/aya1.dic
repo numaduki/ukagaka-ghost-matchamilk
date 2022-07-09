@@ -1,0 +1,593 @@
+///////// 文 version 3 形式辞書制御用辞書
+///////// for 文 version 4
+///////// copyright (C) 2002-2003 umeici.
+
+// 改行コード
+#define	←┘	%ASC(13)%ASC(10)
+
+// res_reference 数の上限
+#define	RES_REF_MAX	1024
+
+// SAORI ロードのステータス
+#define	LOADLIB_ERROR	0
+#define	LOADLIB_OK	1
+#define	LOADLIB_OVERLAP	2
+
+// チェイン関数定義
+#globaldefine	{{CHAIN		{ switch CHAIN.Index {
+#globaldefine	}}CHAIN		} CHAIN.Index++ }
+
+//---- NOTIFY リクエスト ----------------------------------------------------------------
+//---- argv[0] イベントID
+OnRequest.NOTIFY
+{
+	//---- 実行
+	//---- NOTIFY なので実行結果は捨てる
+	_value = SHIORI3FW.RaiseIDEvent(_argv[0])
+	//---- 応答
+	"SHIORI/3.0 200 OK←┘←┘"
+}
+
+//---- GET リクエスト -------------------------------------------------------------------
+//---- argv[0] イベントID
+OnRequest.GET
+{
+	//---- 実行
+	_value = SHIORI3FW.RaiseIDEvent(_argv[0])
+	//---- 実行結果が空なら 204、ただし重要スクリプトなら値を補完する
+	if _value == "" {
+		SHIORI3FW.MakeEmptyResponse(_argv[0])
+	}
+	//---- 実行結果があるので Value を返す
+	else {
+		//---- リクエストヘッダを作成する
+		"SHIORI/3.0 200 OK←┘/
+		Sender: AYA←┘/
+		Charset: Shift_JIS←┘/
+		Value: %_value←┘"
+		--
+		//---- res_reference を Reference ヘッダに出力
+		SHIORI3FW.AssembleReferenceHeader
+		--
+		//---- ターミネート
+		"←┘"
+	}
+}
+
+//---- res_reference* 変数からリクエストヘッダを作成 ------------------------------------
+SHIORI3FW.AssembleReferenceHeader
+{
+	//---- res_reference* を読み取り、リクエストヘッダを作成する
+	_i = 0
+	_result = ""
+	_before_value = ""
+	while _i < RES_REF_MAX {
+		//---- 変数名作成
+		_varname = "res_reference%_i"
+		//---- 変数値取得
+		_value = NAMETOVALUE(_varname)
+		//---- 値がヌルストリングでないならヘッダに追加、変数は空にする
+		if _value != "" {
+			_result += "Reference%_i: %_value←┘"
+			LETTONAME(_varname, "")
+		}
+		//---- 値がヌルの res_reference が連続したら終了とする
+		else {
+			if _before_value == "" {
+			_i = RES_REF_MAX
+			}
+		}
+		_before_value = _value
+		//---- 次へ
+		_i++
+	}
+	_result
+}
+
+//---- 未定義のリクエスト ---------------------------------------------------------------
+OnRequest.Illegal
+{
+	//---- 400
+	"SHIORI/3.0 400 Bad Request←┘←┘"
+}
+
+//---- ID ヘッダによるイベント処理 ------------------------------------------------------
+//---- argv[0] イベントID
+SHIORI3FW.RaiseIDEvent
+{
+	//---- reference 変数を作成
+	SHIORI3FW.MakeReferenceVariable
+	//---- イベントが OnSecondChange ならランダムトーク関連処理
+	if _argv[0] == "OnSecondChange" {
+		SHIORI3FW.ControlAiTalk(&_argv[0])
+	}
+	//---- OnUpdateReady ならロード中の SAORI をすべて unload してしまう
+	if _argv[0] == "OnUpdateReady" {
+		SHIORI3FW.SaoriUnloadAll
+	}
+	//---- OnUpdateComplete なら dl2 を探す。存在したら同名の dll を削除、dl2 は dll にリネームする
+	if _argv[0] == "OnUpdateComplete" {
+		SHIORI3FW.Dl2ToDll
+	}
+	//---- 該当イベントを起動してスクリプトを取得
+	_res := CALLBYNAME(_argv[0])
+	//---- スクリプト後端からチェイン情報を抜き出し、チェイン開始処理を実行
+	SETSEPARATOR(_res, ":chain=")
+	SHIORI3FW.StartChainTalk(_res[1])
+	//---- スクリプトを出力
+	_res[0]
+	//---- reference 変数をクリア
+	SHIORI3FW.ClearReferenceVariable
+}
+
+//---- 応答が空の場合のヘッダ作成 -------------------------------------------------------
+//---- argv[0] イベントID
+SHIORI3FW.MakeEmptyResponse
+{
+	if _argv[0] == "OnFirstBoot" || /
+		_argv[0] == "OnBoot" || /
+		_argv[0] == "OnWindowStateRestore" || /
+		_argv[0] == "OnGhostChanged" {
+		//---- サーフィス表示
+		"SHIORI/3.0 200 OK←┘/
+		Sender: AYA←┘/
+		Charset: Shift_JIS←┘/
+		Value: \0\s[0]\1\s[10]\e←┘←┘"
+	}
+	elseif _argv[0] == "OnClose" {
+		//---- 終了
+		"SHIORI/3.0 200 OK←┘/
+		Sender: AYA←┘/
+		Charset: Shift_JIS←┘/
+		Value: \0\-\e←┘←┘"
+	}
+	else {
+		//---- 上記以外のイベントでは単に 204
+		"SHIORI/3.0 204 No Content←┘←┘"
+	}
+}
+
+//---- AI トーク処理 --------------------------------------------------------------------
+//---- argv[0] イベントID
+SHIORI3FW.ControlAiTalk
+{
+	if aitalkinterval > 0 {
+		if reference3 == 1 {
+			//---- イベント=OnSecondChange かつ cantalk=1 でトーク制御カウンタ++
+			SHIORI3FW.Aitalkcount++
+			//---- 制御カウンタ値がトーク間隔を越えたらランダムトーク
+			if SHIORI3FW.Aitalkcount > aitalkinterval {
+				SHIORI3FW.Aitalkcount = 0
+				_argv[0] = "OnAiTalk"
+			}
+		}
+	}
+}
+
+//---- リクエストヘッダから reference* 変数を作成 ---------------------------------------
+SHIORI3FW.MakeReferenceVariable
+{
+	//---- 全ヘッダを検索
+	_i = 0
+	_break = 0
+	SHIORI3FW.ReferenceList = ""
+	while _break == 0 {
+		//---- キー名称を取得
+		_keyname = REQ.KEY(_i)
+		//---- キー名が空ならループから抜ける
+		if _keyname == "" {
+			_break = 1
+		}
+		//---- Reference* ヘッダが見つかったら reference* 変数を作成
+		//---- バイト値 1 は半角カンマへ変換する
+		elseif SUBSTR(_keyname, 0, 9) == "Reference" {
+			_refname = TOLOWER(_keyname)
+			_refvalue := REQ.VALUE(_i)
+			if ISREAL(_refvalue) == 0 {
+				LETTONAME(_refname, REPLACE(_refvalue, ASC(1), ","))
+			}
+			else {
+				LETTONAME(_refname, _refvalue)
+			}
+			if SHIORI3FW.ReferenceList != "" {
+				SHIORI3FW.ReferenceList += ","
+			}
+			SHIORI3FW.ReferenceList += _refname
+		}
+		_i++
+	}
+}
+
+//---- reference* 変数をクリア ----------------------------------------------------------
+SHIORI3FW.ClearReferenceVariable
+{
+	if SHIORI3FW.ReferenceList != "" {
+		_num = ARRAYSIZE(SHIORI3FW.ReferenceList)
+		_i = 0
+		while _i < _num {
+			LETTONAME(SHIORI3FW.ReferenceList[_i], "")
+			_i++
+		}
+	}
+}
+
+
+//**** FUNCTIONEX 補完 ******************************************************************
+
+//---- FUNCTIONEX -----------------------------------------------------------------------
+FUNCTIONEX
+{
+	//---- 必要に応じて load 及び GET Version 送出
+	_execflag = LOADLIB(_argv[0])
+	if _execflag == LOADLIB_OK {
+		//---- GET Version 送出
+		if SUBSTR(SHIORI3FW.SendGETVersion(_argv[0]), 0, 1) != "2" {
+			//---- GET Version に失敗したら即 unload
+			_execflag = LOADLIB_ERROR
+			UNLOADLIB(_argv[0])
+		}
+		//---- ロード済リストに登録
+		if SAORI.DllList != "" {
+			SAORI.DllList += ASC(1)
+		}
+		SAORI.DllList += _argv[0]
+	}
+	//---- エラーが無ければ処理続行
+	if _execflag != LOADLIB_ERROR {
+		//---- リクエストヘッダ作成
+		_reqheader =/
+			"EXECUTE SAORI/1.0←┘/
+			Sender: AYA←┘/
+			SecurityLevel: Local←┘"
+		_i = 1
+		_j = 0
+		while _i < _argc {
+			_reqheader += "Argument%_j: %_argv[_i]←┘"
+			_i++
+			_j++
+		}
+		_reqheader += "←┘"
+		//---- リクエスト送出
+		REQUESTLIB(_argv[0], _reqheader)
+		//---- 結果(Result)
+		LIB.VALUE("Result")
+		//---- 結果(Value)
+		SHIORI3FW.MakeValueexVariable
+	}
+}
+
+//---- SAORI ----------------------------------------------------------------------------
+//---- FUNCTIONEX と同じコードです
+SAORI
+{
+	//---- 必要に応じて load 及び GET Version 送出
+	_execflag = LOADLIB(_argv[0])
+	if _execflag == LOADLIB_OK {
+		//---- GET Version 送出
+		if SUBSTR(SHIORI3FW.SendGETVersion(_argv[0]), 0, 1) != "2" {
+			//---- GET Version に失敗したら即 unload
+			_execflag = LOADLIB_ERROR
+			UNLOADLIB(_argv[0])
+		}
+		else {
+			//---- GET Version 成功でロード済リストに登録
+			if SAORI.DllList != "" {
+				SAORI.DllList += ASC(1)
+			}
+			SAORI.DllList += _argv[0]
+		}
+	}
+	//---- エラーが無ければ処理続行
+	if _execflag != LOADLIB_ERROR {
+		//---- リクエストヘッダ作成
+		_reqheader =/
+			"EXECUTE SAORI/1.0←┘/
+			Sender: AYA←┘/
+			SecurityLevel: Local←┘"
+		_i = 1
+		_j = 0
+		while _i < _argc {
+			_reqheader += "Argument%_j: %_argv[_i]←┘"
+			_i++
+			_j++
+		}
+		_reqheader += "←┘"
+		//---- リクエスト送出
+		REQUESTLIB(_argv[0], _reqheader)
+		//---- 結果(Result)
+		LIB.VALUE("Result")
+		//---- 結果(Value)
+		SHIORI3FW.MakeValueexVariable
+	}
+}
+
+//---- GET Version 送出 -----------------------------------------------------------------
+SHIORI3FW.SendGETVersion
+{
+	//---- 送出
+	REQUESTLIB(_argv[0],/
+		"GET Version SAORI/1.0←┘/
+		Sender: AYA←┘←┘")
+	//---- 実行結果(ステータス)を返す
+	LIB.STATUSCODE
+}
+
+//---- リクエストヘッダから valueex* 変数を作成 -----------------------------------------
+SHIORI3FW.MakeValueexVariable
+{
+	//---- 全ヘッダを検索
+	_i = 0
+	_break = 0
+	while _break == 0 {
+		//---- キー名称を取得
+		_keyname = LIB.KEY(_i)
+		//---- キー名が空ならループから抜ける
+		if _keyname == "" {
+			_break = 1
+		}
+		//---- Value* ヘッダが見つかったら valueex* 変数を作成
+		elseif SUBSTR(_keyname, 0, 5) == "Value" {
+			LETTONAME("valueex%SUBSTR(_keyname, 5, 3)", LIB.VALUE(_i))
+		}
+		_i++
+	}
+}
+
+//---- 全てのロード済 SAORI をアンロードする --------------------------------------------
+SHIORI3FW.SaoriUnloadAll
+{
+	_i = 0
+	_num = ARRAYSIZE(SAORI.DllList)
+	while _i < _num {
+		UNLOADLIB(SAORI.DllList[_i])
+		_i++
+	}
+	SAORI.DllList = ""
+}
+
+
+//**** チェイン制御 *********************************************************************
+
+//---- チェイン情報を解析してチェイン処理を開始する -------------------------------------
+//---- argv[0] チェイン名
+SHIORI3FW.StartChainTalk
+{
+	//---- チェイン名が空なら何もしない
+	if _argv[0] != "" {
+		//---- チェイン名 == "end" なら強制終了
+		if _argv[0] == "end" {
+			SHIORI3FW.EndChainTalk
+		}
+		//---- 新チェイン開始
+		else {
+			CHAIN.IDName = _argv[0]
+			CHAIN.Index  = 0
+		}
+	}
+}
+
+//---- チェイン発動処理 (OnAiTalk から呼ばれる) -----------------------------------------
+ChainTalk
+{
+	//---- チェイン関数実行
+	_res = CALLBYNAME(CHAIN.IDName)
+	//---- 結果が空だったらチェインは終了、通常のランダムトークへ戻る
+	if _res == "" {
+		SHIORI3FW.EndChainTalk
+		RandomTalk
+	}
+	else {
+		_res
+	}
+}
+
+//---- チェインを終了する ---------------------------------------------------------------
+SHIORI3FW.EndChainTalk
+{
+	CHAIN.IDName = ""
+}
+
+
+//**** ネットワーク更新後にできた dl2 ファイルに関する処置 ******************************
+
+//---- 処理開始 -------------------------------------------------------------------------
+SHIORI3FW.Dl2ToDll
+{
+	//---- aya.dll の位置から処理開始
+	SHIORI3FW.ExecuteDl2ToDll("")
+}
+
+//---- ひとつのフォルダ階層での処理 -----------------------------------------------------
+//---- argv[0] 処理対象のパス
+SHIORI3FW.ExecuteDl2ToDll
+{
+	//---- ファイルリスト取得
+	_files = TOLOWER(FENUM(_argv[0]))
+	_filenum = ARRAYSIZE(_files)
+	//---- 全ファイルをチェックして処理対象をリストに溜めていく
+	_i = 0
+	_target = ""
+	while _i < _filenum {
+		if SUBSTR(_files[_i], 0, 1) == "\" {
+			//---- フォルダであればその中を再帰的に処理
+			SHIORI3FW.ExecuteDl2ToDll("%_argv[0]%_files[_i]")
+		}
+		else {
+			//---- ファイルであれば dl2 かチェック
+			if SHIORI3FW.IsDl2(_files[_i]) == 1 {
+				//---- dl2 が見つかったら主ファイル名をリストに登録
+				_mainname = SHIORI3FW.GetMainFileName(_files[_i])
+				if _target != "" {
+					_target += ","
+				}
+				_target += _mainname
+			}
+		}
+		_i++
+	}
+	//---- リストに登録したファイルについて順次削除/リネーム処理を行う
+	_pairnum = ARRAYSIZE(_target)
+	_i = 0
+	if _argv[0] != "" {
+		_argv[0] += "\"
+	}
+	while _i < _pairnum {
+		_mainname = "%_argv[0]%_target[_i]"
+		//---- dll 削除(あったら)
+		_dmy = FDELETE("%_mainname.dll")
+		//---- dl2 を dll へリネーム
+		_dmy = FRENAME("%_mainname.dl2", "%_mainname.dll")
+		_i++
+	}
+}
+
+//---- ファイル拡張子が dl2 かチェックする関数 ------------------------------------------
+//---- argv[0] ファイル名
+SHIORI3FW.IsDl2
+{
+	_len = STRLEN(_argv[0])
+	_extop = _len - 4
+	if _extop < 0 {
+		0
+	}
+	elseif SUBSTR(_argv[0], _extop, 4) == ".dl2" {
+		1
+	}
+	else {
+		0
+	}
+}
+
+//---- ファイル名から拡張子を削除する関数 -----------------------------------------------
+//---- argv[0] ファイル名
+SHIORI3FW.GetMainFileName
+{
+	_period = -1
+	_next = 0
+	while _next >= 0 {
+		_startpoint = _period + 1
+		_next = STRSTR(_argv[0], ".", _startpoint)
+		if _next > _period {
+			_period = _next
+		}
+	}
+	if _period > -1 {
+		SUBSTR(_argv[0], 0, _period)
+	}
+	else {
+		_argv[0]
+	}
+}
+
+
+//**** インストール済ゴーストのsakura名リスト構築 ***************************************
+
+//---- 本体 -----------------------------------------------------------------------------
+SHIORI3FW.StructInstalledGhostList
+{
+	if _argc != 0 {
+		if _argv[0] == 0 {
+			ERASEVARIABLE("installedghostlist")
+			ERASEVARIABLE("installedsakuralist")
+			ERASEVARIABLE("installedkerolist")
+			return
+		}
+	}
+	//---- ghost フォルダ配下のサブフォルダ一覧を取得
+	installedghostlist  = ""
+	installedsakuralist = ""
+	installedkerolist   = ""
+	_filelist = FENUM("..\..\..")
+	_filenum  = ARRAYSIZE(_filelist)
+	//---- リストからフォルダのみ抽出
+	_dirlist = ""
+	for _i = 0; _i < _filenum; _i++ {
+		if SUBSTR(_filelist[_i], 0, 1) == "\" {
+			if _dirlist != "" {
+				_dirlist  += ","
+			}
+			_dirlist  += _filelist[_i]
+		}
+	}
+	_dirnum = ARRAYSIZE(_dirlist);
+	//---- リスト作成
+	_num = 0
+	if _argc == 0 {
+		StructGhostList.Index = 0
+		_num = _dirnum
+	}
+	else {
+		if ISINTEGER(StructGhostList.Index) == 0 {
+			StructGhostList.Index = 0
+		}
+		elseif StructGhostList.Index >= _dirnum {
+			StructGhostList.Index = 0
+		}
+		if ISINTEGER(_argv[0]) == 0 {
+			_num = _dirnum
+		}
+		else {
+			_num = _argv[0]
+			if _num > _dirnum {
+				_num = _dirname
+			}
+		}
+	}
+	_i = 0
+	while _i < _num {
+		//---- sakura.name 取得
+		_ghostname = SHIORI3FW.GetGhostNameFromDescriptTxt("..\..\..%_dirlist[StructGhostList.Index]")
+		//---- リストへ追加
+		if _ghostname != "" {
+			if installedghostlist != "" {
+				installedghostlist  += ","
+				installedsakuralist += ","
+				installedkerolist   += ","
+			}
+			installedghostlist  += _ghostname[0]
+			installedsakuralist += _ghostname[1]
+			installedkerolist   += _ghostname[2]
+		}
+		//---- next
+		_i++
+		StructGhostList.Index++
+		if StructGhostList.Index >= _dirnum {
+			StructGhostList.Index = 0
+		}
+	}
+}
+
+//---- descript.txt から name/sakura.name/kero.name を取得する関数 ----------------------
+//---- argv[0] ゴーストディレクトリ
+SHIORI3FW.GetGhostNameFromDescriptTxt
+{
+	_filename = "%_argv[0]\ghost\master\descript.txt"
+	if FOPEN(_filename, "read") != 0 {
+		_ghostname  = ",,"
+		_flag = 0
+		_line = ""
+		while _line != -1 {
+			_line = FREAD(_filename)
+			if _line != -1 {
+				_param = CUTSPACE(_line[0])
+				if _param == "name" {
+					_ghostname[0] = CUTSPACE(_line[1])
+					_flag++
+				}
+				elseif _param == "sakura.name" {
+					_ghostname[1] = CUTSPACE(_line[1])
+					_flag += 2
+				}
+				elseif _param == "kero.name" {
+					_ghostname[2] = CUTSPACE(_line[1])
+					_flag += 4
+				}
+				if _flag == 7 {
+					_line = -1
+				}
+			}
+		}
+		FCLOSE(_filename)
+		_ghostname
+	}
+}
