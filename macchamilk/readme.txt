@@ -53,6 +53,3 @@ SHIORI「結奈SecondEdition」: Rheinさん
 
 SAORI「文」: umeiciさん
 http://umeici.onjn.jp/
-
-
-[EOF]
