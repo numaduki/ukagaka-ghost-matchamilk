@@ -21,7 +21,7 @@ menu.sidebar.alignment,lefttop
 menu.separator.color.r,0
 menu.separator.color.g,0
 menu.separator.color.b,0
-craftmanurl,http://nft.hp.infoseek.co.jp/
-craftman,mikuzu
-craftmanw,…‹û
+craftmanurl,https://nu.skr.jp/
+craftman,Numaduki
+craftmanw,ÀŒ
 icon,macchamilk.ico
