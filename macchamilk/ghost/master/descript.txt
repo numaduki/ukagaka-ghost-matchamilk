@@ -24,4 +24,4 @@ menu.separator.color.b,0
 icon,macchamilk.ico
 craftman,Numaduki
 craftmanw,ÀŒ
-craftmanurl,https://nu.skr.jp/
+craftmanurl,https://num.static.jp/
