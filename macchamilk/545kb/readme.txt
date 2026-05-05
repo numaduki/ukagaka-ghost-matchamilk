@@ -1,14 +1,7 @@
-
-
 545kb
-copyr.2004 mikuzu all rights reserved.
+Copyright 2004-2026 沼月 All Rights Reserved.
 
-
-
-・安直
-・小さげ
-・ちょっぴりおしゃれな『1090kb』もあります。
-　配布先でどうぞ。
-　http://www3.to/nft/
-
-
+- 安直
+- 小さげ
+- ちょっぴりおしゃれな『1090kb』もあります。配布先でどうぞ。
+　https://num.static.jp/

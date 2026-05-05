@@ -3,9 +3,9 @@ type,balloon
 name,545kb
 id,545kb
 
-craftman,mikuzu
-craftmanw,…‹û
-craftmanurl,http://www3.to/yuh/
+craftman,numaduki
+craftmanw,ÀŒ
+craftmanurl,https://num.static.jp/
 
 origin.x,18
 origin.y,7
